@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standalone Excel & CSV Analytics Dashboard</title>
+    <style>
+      :root {
+        --bg: #071827;
+        --bg-soft: #0e1f33;
+        --panel: rgba(14, 31, 51, 0.9);
+        --panel-strong: #10233d;
+        --surface: #12253e;
+        --surface-alt: #183153;
+        --line: rgba(167, 196, 255, 0.2);
+        --text: #ebf4ff;
+        --muted: #a9bfd9;
+        --primary: #5aa7ff;
+        --primary-2: #6fe7c1;
+        --warning: #ffc857;
+        --danger: #ff718a;
+        --success: #5fe0a3;
+        --shadow: 0 18px 40px rgba(7, 24, 39, 0.45);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background:
+          radial-gradient(circle at top left, rgba(90, 167, 255, 0.26), transparent 30%),
+          radial-gradient(circle at right, rgba(111, 231, 193, 0.12), transparent 25%),
+          var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        padding: 20px;
+      }
+
+      button, input, select {
+        font: inherit;
+      }
+
+      .app {
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 20px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(12, 22, 35, 0.8);
+        backdrop-filter: blur(8px);
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color: #062235;
+        font-weight: 900;
+      }
+
+      .brand-copy small {
+        display: block;
+        color: var(--muted);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .brand-copy strong {
+        font-size: 1.1rem;
+        letter-spacing: 0.08em;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .button {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.18s ease;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(90, 167, 255, 0.7);
+      }
+
+      .button.primary {
+        background: linear-gradient(135deg, var(--primary), #3d7af7);
+        border-color: transparent;
+        color: white;
+      }
+
+      .button.secondary {
+        background: rgba(111, 231, 193, 0.12);
+        border-color: rgba(111, 231, 193, 0.35);
+        color: #dffcf5;
+      }
+
+      .button.ghost {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .upload-zone {
+        position: relative;
+        display: grid;
+        gap: 18px;
+        margin-top: 22px;
+        padding: 22px;
+        border: 1px dashed rgba(90, 167, 255, 0.4);
+        border-radius: 20px;
+        background: rgba(15, 31, 49, 0.8);
+      }
+
+      .upload-zone.drag-over {
+        border-color: rgba(111, 231, 193, 0.9);
+        background: rgba(18, 52, 54, 0.35);
+      }
+
+      .upload-zone-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .upload-zone h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        letter-spacing: -0.06em;
+      }
+
+      .upload-zone p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .upload-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .info-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(111, 231, 193, 0.12);
+        border: 1px solid rgba(111, 231, 193, 0.3);
+        color: #dffcf5;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .meta-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .meta-card,
+      .panel,
+      .insight-item,
+      .sheet-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(13, 28, 43, 0.82);
+        box-shadow: var(--shadow);
+      }
+
+      .meta-card {
+        padding: 16px 18px;
+      }
+
+      .meta-label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .meta-value {
+        font-size: clamp(1.4rem, 2vw, 1.9rem);
+        font-weight: 800;
+        letter-spacing: -0.05em;
+      }
+
+      .workspace {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
+        gap: 20px;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        letter-spacing: -0.04em;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .control {
+        display: grid;
+        gap: 6px;
+        min-width: 130px;
+      }
+
+      .control span {
+        color: var(--muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .control select {
+        width: 100%;
+        min-height: 40px;
+        background: rgba(17, 33, 52, 0.85);
+        border: 1px solid var(--line);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+
+      .chart-list {
+        display: grid;
+        gap: 14px;
+      }
+
+      .chart-item {
+        display: grid;
+        gap: 8px;
+      }
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .bar-track {
+        height: 12px;
+        width: 100%;
+        border-radius: 999px;
+        background: rgba(167, 196, 255, 0.12);
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      }
+
+      .insight-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .insight-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px 12px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+
+      .dot.blue { background: var(--primary); }
+      .dot.green { background: var(--primary-2); }
+      .dot.orange { background: var(--warning); }
+
+      .insight-item strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.96rem;
+      }
+
+      .insight-item span {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .sheet-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .sheet-card {
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .sheet-card.selected {
+        border-color: rgba(111, 231, 193, 0.6);
+        background: rgba(17, 56, 54, 0.45);
+      }
+
+      .sheet-card strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .sheet-card small {
+        color: var(--muted);
+      }
+
+      .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .profile-card {
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(21, 39, 60, 0.8);
+        border: 1px solid var(--line);
+      }
+
+      .profile-card strong {
+        display: block;
+        margin-top: 4px;
+      }
+
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: rgba(90, 167, 255, 0.1);
+        border: 1px solid rgba(90, 167, 255, 0.25);
+        color: var(--muted);
+        font-size: 0.74rem;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        max-height: 420px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+      }
+
+      th, td {
+        border-bottom: 1px solid rgba(167, 196, 255, 0.12);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: rgba(11, 21, 32, 0.94);
+        color: var(--muted);
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      td {
+        color: var(--text);
+        font-size: 0.92rem;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .status {
+        margin-top: 12px;
+        color: var(--muted);
+        min-height: 24px;
+      }
+
+      @media (max-width: 980px) {
+        .workspace,
+        .meta-row {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar,
+        .upload-zone-header,
+        .panel-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand" aria-label="Analytics dashboard brand">
+          <div class="brand-mark">A</div>
+          <div class="brand-copy">
+            <small>Data Studio</small>
+            <strong>Analytics Dashboard</strong>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="button secondary" id="load-sample" type="button">Load sample data</button>
+          <label class="button primary" for="fileInput">Upload CSV / Excel</label>
+          <input id="fileInput" class="file-input" type="file" accept=".csv,.xls,.xlsx" />
+          <button class="button ghost" id="exportHtml" type="button">Export HTML</button>
+          <button class="button ghost" id="exportImage" type="button">Export PNG</button>
+        </div>
+      </header>
+
+      <section class="upload-zone" id="uploadZone" aria-label="Upload file zone">
+        <div class="upload-zone-header">
+          <div>
+            <p class="info-pill">Offline-ready</p>
+            <h1>Spreadsheet insights without the clutter.</h1>
+          </div>
+          <div class="upload-actions">
+            <button class="button primary" id="chooseFile" type="button">Select file</button>
+            <button class="button ghost" id="clearData" type="button">Reset</button>
+          </div>
+        </div>
+        <p>Drag a CSV, XLS, or XLSX file here, or click the button to analyze it in your browser. Data remains in memory only.</p>
+      </section>
+
+      <section class="meta-row" aria-label="Overview metrics">
+        <article class="meta-card">
+          <span class="meta-label">Rows</span>
+          <span class="meta-value" id="metaRows">0</span>
+        </article>
+        <article class="meta-card">
+          <span class="meta-label">Columns</span>
+          <span class="meta-value" id="metaCols">0</span>
+        </article>
+        <article class="meta-card">
+          <span class="meta-label">Missing values</span>
+          <span class="meta-value" id="metaMissing">0</span>
+        </article>
+        <article class="meta-card">
+          <span class="meta-label">Duplicate rows</span>
+          <span class="meta-value" id="metaDuplicates">0</span>
+        </article>
+      </section>
+
+      <section class="workspace" id="dashboard">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Distribution dashboard</h2>
+            <div class="controls">
+              <label class="control">
+                <span>Group by</span>
+                <select id="groupBy"></select>
+              </label>
+              <label class="control">
+                <span>Metric</span>
+                <select id="metricSelect"></select>
+              </label>
+            </div>
+          </div>
+          <div class="chart-list" id="barChart"></div>
+        </div>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <h2>Key insights</h2>
+          </div>
+          <ul class="insight-list" id="insightList"></ul>
+        </aside>
+      </section>
+
+      <section class="panel" style="margin-top: 24px;">
+        <div class="panel-header">
+          <h2>Sheet selection</h2>
+        </div>
+        <div class="sheet-grid" id="sheetGrid"></div>
+      </section>
+
+      <section class="panel" style="margin-top: 24px;">
+        <div class="panel-header">
+          <h2>Column profiling</h2>
+        </div>
+        <div class="profile-grid" id="profileGrid"></div>
+      </section>
+
+      <section class="panel" style="margin-top: 24px;">
+        <div class="panel-header">
+          <h2>Data preview</h2>
+        </div>
+        <div class="table-wrap">
+          <table id="previewTable"></table>
+        </div>
+        <div class="status" id="statusText">Waiting for a data file.</div>
+      </section>
+    </div>
+
+    <script src="./node_modules/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+      const sampleData = [
+        { Date: '2026-01-05', Region: 'North', Product: 'Laptops', Channel: 'Online', Orders: 18, Revenue: 24500, Profit: 5600 },
+        { Date: '2026-01-08', Region: 'South', Product: 'Mobiles', Channel: 'Retail', Orders: 24, Revenue: 19600, Profit: 4300 },
+        { Date: '2026-01-12', Region: 'East', Product: 'Accessories', Channel: 'Online', Orders: 31, Revenue: 14250, Profit: 3200 },
+        { Date: '2026-01-15', Region: 'West', Product: 'Tablets', Channel: 'Wholesale', Orders: 15, Revenue: 18400, Profit: 4700 },
+        { Date: '2026-01-18', Region: 'North', Product: 'Smart TVs', Channel: 'Retail', Orders: 11, Revenue: 27200, Profit: 6400 },
+        { Date: '2026-01-21', Region: 'Central', Product: 'Laptops', Channel: 'Online', Orders: 20, Revenue: 25500, Profit: 6100 },
+        { Date: '2026-01-27', Region: 'South', Product: 'Accessories', Channel: 'Online', Orders: 28, Revenue: 13600, Profit: 2900 },
+        { Date: '2026-02-02', Region: 'West', Product: 'Mobiles', Channel: 'Retail', Orders: 19, Revenue: 21250, Profit: 5000 },
+        { Date: '2026-02-04', Region: 'East', Product: 'Laptops', Channel: 'Wholesale', Orders: 17, Revenue: 23600, Profit: 5800 },
+        { Date: '2026-02-09', Region: 'North', Product: 'Accessories', Channel: 'Retail', Orders: 33, Revenue: 15220, Profit: 3600 },
+        { Date: '2026-02-11', Region: 'Central', Product: 'Smart TVs', Channel: 'Online', Orders: 12, Revenue: 30100, Profit: 7200 },
+        { Date: '2026-02-18', Region: 'South', Product: 'Tablets', Channel: 'Wholesale', Orders: 14, Revenue: 17100, Profit: 4100 },
+        { Date: '2026-02-24', Region: 'North', Product: 'Laptops', Channel: 'Retail', Orders: 29, Revenue: 27800, Profit: 6600 }
+      ];
+
+      const state = {
+        rows: [],
+        headers: [],
+        workbookSheets: [],
+        selectedSheet: null,
+        groupBy: '',
+        metric: '',
+        fileName: 'No file selected'
+      };
+
+      const fileInput = document.getElementById('fileInput');
+      const chooseFile = document.getElementById('chooseFile');
+      const uploadZone = document.getElementById('uploadZone');
+      const clearData = document.getElementById('clearData');
+      const groupByEl = document.getElementById('groupBy');
+      const metricEl = document.getElementById('metricSelect');
+      const barChart = document.getElementById('barChart');
+      const insightList = document.getElementById('insightList');
+      const sheetGrid = document.getElementById('sheetGrid');
+      const previewTable = document.getElementById('previewTable');
+      const statusText = document.getElementById('statusText');
+
+      const numberLike = (value) => {
+        if (value === null || value === undefined || value === '') return Number.NaN;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : Number.NaN;
+        const text = String(value).trim().replace(/[$,%\s]/g, '').replace(/,/g, '');
+        if (!text) return Number.NaN;
+        const parsed = Number(text);
+        return Number.isFinite(parsed) ? parsed : Number.NaN;
+      };
+
+      const cleanValue = (value) => {
+        if (value === null || value === undefined) return '';
+        const raw = String(value).trim();
+        if (!raw) return '';
+        const numeric = numberLike(raw);
+        return Number.isNaN(numeric) ? raw : numeric;
+      };
+
+      function setStatus(message) {
+        statusText.textContent = message;
+      }
+
+      function collapseInputRows(rows) {
+        return rows
+          .filter((row) => row && typeof row === 'object')
+          .map((row) => {
+            const output = {};
+            for (const [key, value] of Object.entries(row)) {
+              output[String(key).trim() || 'Column'] = cleanValue(value);
+            }
+            return output;
+          })
+          .filter((row) => Object.values(row).some((v) => String(v).trim() !== ''));
+      }
+
+      function parseCSVText(text) {
+        const workbook = XLSX.read(text, {
+          type: 'string',
+          raw: false,
+          cellDates: true,
+          defval: ''
+        });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        if (!firstSheet) return [];
+        return collapseInputRows(XLSX.utils.sheet_to_json(firstSheet, { raw: false, defval: '' }));
+      }
+
+      function inferType(values) {
+        const clean = values.filter((v) => v !== '' && v !== null && v !== undefined);
+        if (!clean.length) return 'empty';
+        const numeric = clean.filter((v) => !Number.isNaN(numberLike(v))).length;
+        const ratio = numeric / clean.length;
+        if (ratio > 0.7) {
+          const isDate = clean.filter((v) => !Number.isNaN(Date.parse(String(v)))).length / clean.length > 0.7;
+          if (isDate) return 'date';
+          return 'numerical';
+        }
+        const unique = new Set(clean.map((v) => String(v).toLowerCase()));
+        if (unique.size / clean.length < 0.25) return 'categorical';
+        if (clean.every((v) => ['true', 'false', 'yes', 'no', 'y', 'n'].includes(String(v).toLowerCase()))) return 'boolean';
+        if (clean.every((v) => /^\d{1,3}-\d{1,3}-\d{1,4}$/.test(String(v).trim()))) return 'identifier';
+        return 'free-text';
+      }
+
+      function sum(arr) {
+        return arr.reduce((total, value) => total + Number(value || 0), 0);
+      }
+
+      function median(values) {
+        if (!values.length) return 0;
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2;
+        return sorted[mid];
+      }
+
+      function getStatsForColumn(rows, key) {
+        const values = rows.map((row) => row[key]).filter((v) => v !== '' && v !== null && v !== undefined);
+        const numericValues = values.map((v) => numberLike(v)).filter((n) => !Number.isNaN(n));
+        const missing = rows.length - values.length;
+        const unique = new Set(values.map((v) => String(v))).size;
+        const duplicates = rows.length - new Set(rows.map((row) => JSON.stringify(row))).size;
+        const min = numericValues.length ? Math.min(...numericValues) : 0;
+        const max = numericValues.length ? Math.max(...numericValues) : 0;
+        const avg = numericValues.length ? sum(numericValues) / numericValues.length : 0;
+        const med = numericValues.length ? median(numericValues) : 0;
+
+        return {
+          key,
+          type: inferType(values),
+          missing,
+          unique,
+          duplicates,
+          min,
+          max,
+          avg,
+          med,
+          count: numericValues.length,
+          pctMissing: rows.length ? (missing / rows.length) * 100 : 0
+        };
+      }
+
+      function chooseGroupAndMetric(headers, rows) {
+        const preferredMetrics = ['Revenue', 'Sales', 'Amount', 'Value', 'Total', 'Profit', 'Cost', 'Orders', 'Quantity'];
+        const preferredGroups = ['Region', 'Country', 'Product', 'Category', 'Channel', 'Segment', 'Status', 'Department'];
+
+        let metric = headers.find((header) => preferredMetrics.includes(header)) || headers.find((header) => {
+          const values = rows.map((row) => numberLike(row[header])).filter((n) => !Number.isNaN(n));
+          return values.length / rows.length > 0.6;
+        }) || headers[0];
+
+        let group = headers.find((header) => preferredGroups.includes(header)) || headers.find((header) => {
+          const values = rows.map((row) => row[header]).filter((v) => v !== '' && v !== null && v !== undefined);
+          const unique = new Set(values.map((v) => String(v).toLowerCase()));
+          return unique.size < values.length;
+        }) || headers[1] || headers[0];
+
+        return { metric, group };
+      }
+
+      function aggregateBy(rows, groupKey, metricKey) {
+        const map = new Map();
+        rows.forEach((row) => {
+          const key = String(row[groupKey] ?? 'Unspecified');
+          const value = numberLike(row[metricKey]);
+          if (!map.has(key)) map.set(key, { label: key, value: 0, count: 0 });
+          const entry = map.get(key);
+          if (!Number.isNaN(value)) {
+            entry.value += value;
+          }
+          entry.count += 1;
+        });
+
+        return [...map.values()].sort((a, b) => b.value - a.value);
+      }
+
+      function renderControls(headers) {
+        groupByEl.innerHTML = headers.map((header) => `<option value="${header}">${header}</option>`).join('');
+        metricEl.innerHTML = headers.map((header) => `<option value="${header}">${header}</option>`).join('');
+        if (state.groupBy && headers.includes(state.groupBy)) groupByEl.value = state.groupBy;
+        if (state.metric && headers.includes(state.metric)) metricEl.value = state.metric;
+      }
+
+      function renderBarChart(rows, groupKey, metricKey) {
+        const data = aggregateBy(rows, groupKey, metricKey);
+        const max = Math.max(...data.map((entry) => entry.value), 1);
+        barChart.innerHTML = data.slice(0, 6).map((entry) => {
+          const width = Math.max((entry.value / max) * 100, 8);
+          return `
+            <div class="chart-item">
+              <div class="chart-header">
+                <span>${entry.label}</span>
+                <strong>${formatMetric(entry.value, metricKey)}</strong>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width: ${width}%"></div></div>
+            </div>
+          `;
+        }).join('') || '<div class="muted">No chartable data available.</div>';
+      }
+
+      function renderInsights(rows, groupKey, metricKey) {
+        const data = aggregateBy(rows, groupKey, metricKey);
+        const total = data.reduce((sum, item) => sum + item.value, 0);
+        const best = data[0] || { label: 'N/A', value: 0 };
+        const lowest = data[data.length - 1] || { label: 'N/A', value: 0 };
+
+        const items = [
+          {
+            title: `Top performer: ${best.label}`,
+            text: `This segment contributes ${formatMetric(best.value, metricKey)} to the overall total, ranking above the rest of the dataset.`,
+            color: 'blue'
+          },
+          {
+            title: `Lowest contributor: ${lowest.label}`,
+            text: `The weakest segment in the current view is ${formatMetric(lowest.value, metricKey)} and may warrant a closer review.`,
+            color: 'green'
+          },
+          {
+            title: 'Dataset overview',
+            text: `Across ${rows.length} rows, the selected metric totals ${formatMetric(total, metricKey)} with clear concentration by grouping.`,
+            color: 'orange'
+          }
+        ];
+
+        insightList.innerHTML = items.map((item) => `
+          <li class="insight-item">
+            <span class="dot ${item.color}"></span>
+            <div>
+              <strong>${item.title}</strong>
+              <span>${item.text}</span>
+            </div>
+          </li>
+        `).join('');
+      }
+
+      function renderProfile(rows) {
+        const grid = document.getElementById('profileGrid');
+        const stats = state.headers.map((header) => getStatsForColumn(rows, header));
+        grid.innerHTML = stats.slice(0, 8).map((stat) => `
+          <div class="profile-card">
+            <span class="meta-label">${stat.key}</span>
+            <span class="badge">${stat.type}</span>
+            <strong>${stat.count} values</strong>
+            <div class="muted">Missing: ${stat.missing} · Unique: ${stat.unique}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderSheetGrid() {
+        const sheets = state.workbookSheets || [];
+        if (!sheets.length) {
+          sheetGrid.innerHTML = '<div class="muted">No worksheet data available.</div>';
+          return;
+        }
+
+        sheetGrid.innerHTML = sheets.map((sheet, index) => `
+          <div class="sheet-card ${state.selectedSheet === sheet.name ? 'selected' : ''}" data-index="${index}">
+            <strong>${sheet.name}</strong>
+            <small>${sheet.rows.length} rows</small>
+          </div>
+        `).join('');
+
+        sheetGrid.querySelectorAll('.sheet-card').forEach((button) => {
+          button.addEventListener('click', () => {
+            const selected = Number(button.dataset.index);
+            state.selectedSheet = state.workbookSheets[selected].name;
+            state.rows = state.workbookSheets[selected].rows;
+            state.headers = Object.keys(state.rows[0] || {});
+            state.groupBy = state.groupBy || state.headers[0];
+            state.metric = state.metric || state.headers.find((header) => /revenue|sales|amount|profit|total|orders|quantity/i.test(header)) || state.headers[0];
+            renderControls(state.headers);
+            renderDashboard();
+            setStatus(`Viewing worksheet: ${state.selectedSheet}`);
+            renderSheetGrid();
+          });
+        });
+      }
+
+      function renderPreviewTable(rows, headers) {
+        const preview = rows.slice(0, 12);
+        const head = '<thead><tr>' + headers.slice(0, 8).map((header) => `<th>${header}</th>`).join('') + '</tr></thead>';
+        const body = preview.map((row) => {
+          const values = headers.slice(0, 8).map((header) => `<td>${row[header] ?? ''}</td>`).join('');
+          return `<tr>${values}</tr>`;
+        }).join('');
+        previewTable.innerHTML = `${head}<tbody>${body}</tbody>`;
+      }
+
+      function updateMetaCards(rows) {
+        document.getElementById('metaRows').textContent = String(rows.length || 0);
+        document.getElementById('metaCols').textContent = String(state.headers.length || 0);
+        const totalMissing = rows.reduce((sum, row) => {
+          return sum + state.headers.filter((header) => row[header] === '' || row[header] === null || row[header] === undefined).length;
+        }, 0);
+        document.getElementById('metaMissing').textContent = String(totalMissing);
+        const duplicateRows = rows.length - new Set(rows.map((row) => JSON.stringify(row))).size;
+        document.getElementById('metaDuplicates').textContent = String(Math.max(0, duplicateRows));
+      }
+
+      function renderDashboard() {
+        if (!state.rows.length) {
+          barChart.innerHTML = '<div class="muted">Load data to generate insights.</div>';
+          insightList.innerHTML = '';
+          return;
+        }
+
+        const groupKey = state.groupBy || state.headers[0];
+        const metricKey = state.metric || state.headers[0];
+        renderBarChart(state.rows, groupKey, metricKey);
+        renderInsights(state.rows, groupKey, metricKey);
+        updateMetaCards(state.rows);
+        renderPreviewTable(state.rows, state.headers);
+        renderProfile(state.rows);
+      }
+
+      function formatMetric(value, metricKey) {
+        const lower = String(metricKey).toLowerCase();
+        if (/(revenue|sales|amount|total|value|profit|cost|price)/.test(lower)) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value || 0));
+        return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(Number(value || 0));
+      }
+
+      function setDataset(rows, fileLabel) {
+        const normalized = collapseInputRows(rows);
+        if (!normalized.length) {
+          throw new Error('The file does not contain usable rows.');
+        }
+
+        state.rows = normalized;
+        state.headers = Object.keys(normalized[0]);
+        const picks = chooseGroupAndMetric(state.headers, state.rows);
+        state.groupBy = picks.group;
+        state.metric = picks.metric;
+        state.fileName = fileLabel || 'Imported dataset';
+        renderControls(state.headers);
+        renderDashboard();
+        setStatus(`${state.fileName} loaded successfully with ${state.rows.length} rows.`);
+      }
+
+      function parseWorkbookFile(file) {
+        return new Promise((resolve, reject) => {
+          const ext = file.name.split('.').pop().toLowerCase();
+          const handleWorkbook = (workbook) => {
+            try {
+              const workbookRows = workbook.SheetNames.map((sheetName) => ({
+                name: sheetName,
+                rows: collapseInputRows(XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' }))
+              })).filter((sheet) => sheet.rows.length > 0);
+
+              if (!workbookRows.length) {
+                throw new Error('The workbook has no usable rows to analyze.');
+              }
+
+              resolve(workbookRows);
+            } catch (error) {
+              reject(error);
+            }
+          };
+
+          if (ext === 'csv') {
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const workbook = XLSX.read(String(reader.result || ''), { type: 'string', raw: false, cellDates: true, defval: '' });
+                handleWorkbook(workbook);
+              } catch (error) {
+                reject(error);
+              }
+            };
+            reader.onerror = () => reject(new Error('Could not read the CSV file.'));
+            reader.readAsText(file, 'utf-8');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const buffer = reader.result;
+              const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, defval: '' });
+              handleWorkbook(workbook);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = () => reject(new Error('Could not read the Excel file.'));
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      async function processFile(file) {
+        if (!file) return;
+        try {
+          const ext = file.name.split('.').pop().toLowerCase();
+          if (!['csv', 'xls', 'xlsx'].includes(ext)) {
+            throw new Error('Please select a CSV, XLS, or XLSX file.');
+          }
+
+          const content = await parseWorkbookFile(file);
+          const isMultiSheet = Array.isArray(content) && content.length > 0 && typeof content[0] === 'object' && 'name' in content[0] && 'rows' in content[0];
+
+          if (!isMultiSheet) {
+            setDataset(content, file.name);
+            return;
+          }
+
+          state.workbookSheets = content;
+          state.selectedSheet = content[0].name;
+          state.rows = content[0].rows;
+          state.headers = Object.keys(state.rows[0] || {});
+          const picks = chooseGroupAndMetric(state.headers, state.rows);
+          state.groupBy = picks.group;
+          state.metric = picks.metric;
+          renderControls(state.headers);
+          renderSheetGrid();
+          renderDashboard();
+          setStatus(`${file.name} loaded successfully. ${content.length} worksheet(s) detected.`);
+        } catch (error) {
+          console.error(error);
+          setStatus(error.message || 'The file could not be processed.');
+        }
+      }
+
+      function resetData() {
+        state.rows = [];
+        state.headers = [];
+        state.workbookSheets = [];
+        state.selectedSheet = null;
+        state.groupBy = '';
+        state.metric = '';
+        groupByEl.innerHTML = '';
+        metricEl.innerHTML = '';
+        barChart.innerHTML = '<div class="muted">No data loaded.</div>';
+        insightList.innerHTML = '';
+        sheetGrid.innerHTML = '<div class="muted">No worksheets available.</div>';
+        previewTable.innerHTML = '<thead><tr><th>No data</th></tr></thead>';
+        setStatus('Waiting for a data file.');
+      }
+
+      function exportHtmlReport() {
+        if (!state.rows.length) {
+          setStatus('Load data before exporting.');
+          return;
+        }
+        const body = `
+          <html><head><title>${state.fileName}</title>
+          <style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;background:#071827;color:#ebf4ff}table{border-collapse:collapse;width:100%;margin-top:18px}th,td{padding:10px;border:1px solid #21395b;text-align:left}h1{letter-spacing:-0.05em}</style>
+          </head><body>
+            <h1>${state.fileName}</h1>
+            <p>Rows: ${state.rows.length} · Columns: ${state.headers.length}</p>
+            <table>
+              <thead><tr>${state.headers.slice(0, 8).map((header) => `<th>${header}</th>`).join('')}</tr></thead>
+              <tbody>${state.rows.slice(0, 30).map((row) => `<tr>${state.headers.slice(0, 8).map((header) => `<td>${row[header] ?? ''}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+          </body></html>
+        `;
+        const blob = new Blob([body], { type: 'text/html' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${(state.fileName || 'report').replace(/\.[^/.]+$/, '')}.html`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        setStatus('HTML report downloaded.');
+      }
+
+      function exportImageReport() {
+        if (!state.rows.length) {
+          setStatus('Load data before exporting an image.');
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 1400;
+        canvas.height = 1000;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#071827';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ebf4ff';
+        ctx.font = '700 40px Segoe UI';
+        ctx.fillText('Spreadsheet Analytics Dashboard', 60, 80);
+        ctx.font = '500 20px Segoe UI';
+        ctx.fillStyle = '#a9bfd9';
+        ctx.fillText(`${state.fileName} · ${state.rows.length} rows · ${state.headers.length} columns`, 60, 116);
+
+        const cards = [
+          ['Rows', state.rows.length],
+          ['Columns', state.headers.length],
+          ['Missing', state.rows.reduce((sum, row) => sum + state.headers.filter((header) => row[header] === '' || row[header] === null || row[header] === undefined).length, 0)],
+          ['Duplicates', Math.max(0, state.rows.length - new Set(state.rows.map((row) => JSON.stringify(row))).size)]
+        ];
+
+        cards.forEach(([label, value], index) => {
+          const x = 60 + index * 300;
+          ctx.fillStyle = '#12253e';
+          ctx.fillRect(x, 180, 250, 120);
+          ctx.fillStyle = '#a9bfd9';
+          ctx.font = '700 14px Segoe UI';
+          ctx.fillText(String(label).toUpperCase(), x + 18, 212);
+          ctx.fillStyle = '#ebf4ff';
+          ctx.font = '800 34px Segoe UI';
+          ctx.fillText(String(value), x + 18, 270);
+        });
+
+        const total = aggregateBy(state.rows, state.groupBy || state.headers[0], state.metric || state.headers[0]).slice(0, 5);
+        let chartY = 360;
+        const max = Math.max(...total.map((item) => item.value), 1);
+        total.forEach((item) => {
+          const barWidth = (item.value / max) * 760;
+          ctx.fillStyle = '#a9bfd9';
+          ctx.font = '500 18px Segoe UI';
+          ctx.fillText(String(item.label).slice(0, 18), 60, chartY);
+          ctx.fillStyle = '#5aa7ff';
+          ctx.fillRect(260, chartY - 16, barWidth, 18);
+          ctx.fillStyle = '#ebf4ff';
+          ctx.fillText(formatMetric(item.value, state.metric || state.headers[0]), 1035, chartY);
+          chartY += 48;
+        });
+
+        const anchor = document.createElement('a');
+        anchor.download = `${(state.fileName || 'report').replace(/\.[^/.]+$/, '')}.png`;
+        anchor.href = canvas.toDataURL('image/png');
+        anchor.click();
+        setStatus('PNG export downloaded.');
+      }
+
+      function loadSample() {
+        setDataset(sampleData, 'Sample dataset');
+      }
+
+      document.getElementById('load-sample').addEventListener('click', loadSample);
+      chooseFile.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', async (event) => {
+        const [file] = event.target.files || [];
+        if (file) await processFile(file);
+        event.target.value = '';
+      });
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.add('drag-over');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.remove('drag-over');
+        });
+      });
+
+      uploadZone.addEventListener('drop', async (event) => {
+        const file = event.dataTransfer.files?.[0];
+        if (file) await processFile(file);
+      });
+
+      clearData.addEventListener('click', resetData);
+      document.getElementById('exportHtml').addEventListener('click', exportHtmlReport);
+      document.getElementById('exportImage').addEventListener('click', exportImageReport);
+
+      groupByEl.addEventListener('change', (event) => {
+        state.groupBy = event.target.value;
+        renderDashboard();
+      });
+
+      metricEl.addEventListener('change', (event) => {
+        state.metric = event.target.value;
+        renderDashboard();
+      });
+
+      loadSample();
+    </script>
+  </body>
+</html>
